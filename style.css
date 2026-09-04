@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root {
+    --base-color: #889bb4;
+    --text-color: #000000;
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --color-1: #7b8aa7;
+    --color-2: #74829b;
+    --color-3: #3357ff;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-family: 'Valley Sans', sans-serif;
+    color: var(--text-color);
+}
+
+body {
+    padding: 1em;
+    background-color: var(--base-color);
+}
+
+h1, h2, h3{
+    color: var(--text-color);
+    font-size: 2em;
+    margin-bottom: 0.5em;
+}
+
+nav {
+    background-color: var(--base-color);
+    padding: 1em;
+    color: var(--text-color);
+    border-radius: 1em;
+}
+
+nav ul {
+    list-style-type: none;
+    display: flex;
+    gap: 1em;
+}
+
+nav li:first-child {
+    margin-right: auto;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+nav li:not(:first-child) {
+    margin-right: 1em;
+    font-size: 1.2em;
+}
+
+nav a {
+    text-decoration: none;
+    color: var(--text-color);
+}
+
+nav a:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+header, section {
+    margin: 2em auto;
+    width: min(auto, 100%);
+    height: min(auto, 100%);
+    background-color: var(--color-1);
+    padding: min(2em, 15%);
+    border-radius: 1em;
+}
+
+.flex-container {
+    display: flex;
+    justify-content: center;
+    gap: 3em;
+    flex-wrap: wrap;
+    padding: 1em;
+}
+
+header #logo {
+    max-width: 10%;
+    object-fit: cover;
+    object-position: bottom;
+}
+
+header #banner {
+    width: 1800px;
+    height: 150px;
+    object-fit: fill;
+    object-position: bottom;
+}
+
+.text-container {
+    flex: 0 1 34em;
+}
+
+h1 {
+    font-size: 2.5rem;
+    text-align: center;
+    background-color: var(--base-color);
+    padding: 0.2em;
+    border-radius: 1em;
+}
+
+.text-container p {
+    margin: .75rem 0 1em 0;
+    background-color: var(--base-color);
+    padding: 0.2em;
+    font-size: 1.25rem;
+    text-align: center;
+    font-weight: bold;
+    border-radius: 1em;
+}
+
+section {
+    padding: 3em min(2em, 15%);
+    background-color: var(--color-2);
+    border-radius: 1em;
+}
