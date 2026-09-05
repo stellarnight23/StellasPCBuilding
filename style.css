@@ -131,3 +131,16 @@ section {
     background-color: var(--color-2);
     border-radius: 1em;
 }
+
+div.Terms-of-Service-ul {
+    gap: 1.5em;
+    display: grid;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--base-color);
+    padding: 2em;
+    border-radius: 1em;
+    color: var(--text-color);
+    font-weight: bold;    
+}
