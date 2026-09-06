@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account | Ash's PC Building</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="auth-nav.js" defer></script>
+</head>
+<body class="auth-page">
+    <header>
+        <div class="flex-container">
+            <img src="images/Banner.png" alt="Ash's PC Building Banner" id="banner">
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="auth.html">Account</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="policy.html">Terms of Service</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </nav>
+        <div class="flex-container">
+            <img src="images/Logo.png" alt="Ash's PC Building Logo" id="logo">
+        </div>
+    </header>
+
+    <main class="auth-main">
+        <section class="auth-intro">
+            <p class="chat-eyebrow">Ash's PC Building</p>
+            <h1>Your account, your build</h1>
+            <p>Sign in to keep your conversations and PC requests together in one place.</p>
+        </section>
+
+        <section class="auth-card" aria-labelledby="authTitle">
+            <div class="auth-tabs" role="tablist" aria-label="Account options">
+                <button class="auth-tab active" id="loginTab" type="button" role="tab" aria-selected="true" aria-controls="loginPanel">Log in</button>
+                <button class="auth-tab" id="registerTab" type="button" role="tab" aria-selected="false" aria-controls="registerPanel">Create account</button>
+            </div>
+
+            <div class="auth-form-wrap">
+                <div class="auth-form-panel active" id="loginPanel" role="tabpanel" aria-labelledby="loginTab">
+                    <h2 id="authTitle">Welcome back</h2>
+                    <p class="auth-supporting-text">Enter your details to continue.</p>
+                    <form id="loginForm" novalidate>
+                        <label for="loginEmail">Email address</label>
+                        <input id="loginEmail" name="email" type="email" autocomplete="email" required>
+                        <p class="field-error" id="loginEmailError"></p>
+
+                        <label for="loginPassword">Password</label>
+                        <div class="password-field">
+                            <input id="loginPassword" name="password" type="password" autocomplete="current-password" minlength="8" required>
+                            <button class="password-toggle" type="button" data-target="loginPassword" aria-label="Show password">Show</button>
+                        </div>
+                        <p class="field-error" id="loginPasswordError"></p>
+
+                        <div class="form-options">
+                            <label class="checkbox-label"><input type="checkbox" name="remember"> Remember me</label>
+                            <a href="mailto:ashpcbuilding@gmail.com?subject=Password%20reset">Forgot password?</a>
+                        </div>
+                        <button class="auth-submit" type="submit">Log in</button>
+                        <p class="form-message" id="loginMessage" role="status"></p>
+                    </form>
+                </div>
+
+                <div class="auth-form-panel" id="registerPanel" role="tabpanel" aria-labelledby="registerTab" hidden>
+                    <h2>Create your account</h2>
+                    <p class="auth-supporting-text">Save your details for your next custom build.</p>
+                    <form id="registerForm" novalidate>
+                        <label for="registerName">Full name</label>
+                        <input id="registerName" name="name" type="text" autocomplete="name" required>
+                        <p class="field-error" id="registerNameError"></p>
+
+                        <label for="registerEmail">Email address</label>
+                        <input id="registerEmail" name="email" type="email" autocomplete="email" required>
+                        <p class="field-error" id="registerEmailError"></p>
+
+                        <label for="registerPassword">Password</label>
+                        <div class="password-field">
+                            <input id="registerPassword" name="password" type="password" autocomplete="new-password" minlength="8" required>
+                            <button class="password-toggle" type="button" data-target="registerPassword" aria-label="Show password">Show</button>
+                        </div>
+                        <p class="password-hint">Use at least 8 characters.</p>
+                        <p class="field-error" id="registerPasswordError"></p>
+
+                        <label class="checkbox-label terms-checkbox"><input id="acceptTerms" type="checkbox" required> I agree to the <a href="policy.html">Terms of Service</a>.</label>
+                        <p class="field-error" id="termsError"></p>
+                        <button class="auth-submit" type="submit">Create account</button>
+                        <p class="form-message" id="registerMessage" role="status"></p>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Ash's PC Building <br>
+            <a href="mailto:ashpcbuiling@gmail.com">Contact Me</a> <br>
+            <a href="privacy.html">Privacy Policy</a>
+        </p>
+    </footer>
+
+    <script>
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        const loginPanel = document.getElementById('loginPanel');
+        const registerPanel = document.getElementById('registerPanel');
+
+        function showPanel(panelName) {
+            const loginActive = panelName === 'login';
+            loginTab.classList.toggle('active', loginActive);
+            registerTab.classList.toggle('active', !loginActive);
+            loginTab.setAttribute('aria-selected', String(loginActive));
+            registerTab.setAttribute('aria-selected', String(!loginActive));
+            loginPanel.hidden = !loginActive;
+            registerPanel.hidden = loginActive;
+            loginPanel.classList.toggle('active', loginActive);
+            registerPanel.classList.toggle('active', !loginActive);
+        }
+
+        loginTab.addEventListener('click', () => showPanel('login'));
+        registerTab.addEventListener('click', () => showPanel('register'));
+
+        document.querySelectorAll('.password-toggle').forEach((button) => {
+            button.addEventListener('click', () => {
+                const passwordInput = document.getElementById(button.dataset.target);
+                const isPassword = passwordInput.type === 'password';
+                passwordInput.type = isPassword ? 'text' : 'password';
+                button.textContent = isPassword ? 'Hide' : 'Show';
+                button.setAttribute('aria-label', `${isPassword ? 'Hide' : 'Show'} password`);
+            });
+        });
+
+        function showMessage(elementId, message, isError = false) {
+            const messageElement = document.getElementById(elementId);
+            messageElement.textContent = message;
+            messageElement.classList.toggle('error', isError);
+        }
+
+        async function submitAccount(endpoint, form, messageId) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.fromEntries(new FormData(form)))
+            });
+            const result = await response.json();
+            showMessage(messageId, response.ok ? `Welcome, ${result.user.name}.` : result.error, !response.ok);
+            if (response.ok) {
+                const returnPage = new URLSearchParams(window.location.search).get('return');
+                window.location.href = returnPage === 'contact.html' || returnPage === 'dashboard.html' ? returnPage : 'index.html';
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail');
+            const password = document.getElementById('loginPassword');
+            const valid = email.checkValidity() && password.checkValidity();
+            if (!valid) return showMessage('loginMessage', 'Please enter a valid email and password.', true);
+            try {
+                await submitAccount('/api/login', event.currentTarget, 'loginMessage');
+            } catch {
+                showMessage('loginMessage', 'The account server is unavailable. Start the website server and try again.', true);
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const valid = form.checkValidity();
+            if (!valid) return showMessage('registerMessage', 'Please complete all fields and accept the Terms of Service.', true);
+            try {
+                await submitAccount('/api/register', form, 'registerMessage');
+            } catch {
+                showMessage('registerMessage', 'The account server is unavailable. Start the website server and try again.', true);
+            }
+        });
+    </script>
+</body>
+</html>

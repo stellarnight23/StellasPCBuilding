@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="auth-nav.js" defer></script>
+</head>
+<body>
+    <header>
+      <div class="flex-container">
+                <img src="images/Banner.png" alt="Ash's PC Building Banner" id="banner">
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="auth.html">Account</a></li>
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="policy.html">Terms of Service</a></li>
+                    <li><a href="order.html">Order</a></li>
+                </ul>
+            </nav>
+            <div class="flex-container">
+                <img src="images/Logo.png" alt="Ash's PC Building Logo" id="logo">
+            </div>
+        <h1>Live Chat</h1>
+    </header>
+    <main>
+        <div id="chatContainer" class="chat-panel">
+          <div class="chat-panel-header">
+            <div>
+              <p class="chat-eyebrow">Ash's PC Building</p>
+              <h2>Chat with us</h2>
+            </div>
+            <span class="chat-status"><span></span>Online</span>
+          </div>
+          <div id="chatMessages" aria-live="polite">
+            <p class="chat-empty">Send a message and we will get back to you shortly.</p>
+          </div>
+          <div class="chat-composer">
+            <input type="text" id="messageInput" placeholder="Write your message..." aria-label="Your message">
+            <button id="sendBtn" type="button">Send</button>
+          </div>
+        </div>
+    </main>
+ </body>
+
+ <script class="chatContainer">
+  let socket;
+  const chatMessages = document.getElementById('chatMessages');
+  const messageInput = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const soundEnabled = true;
+  let audioContext;
+  let senderName = 'Customer';
+  let roomId;
+
+  function playNotificationSound() {
+    if (!soundEnabled) return;
+    try {
+      audioContext ||= new AudioContext();
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.frequency.value = 660;
+      oscillator.type = 'sine';
+      gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.16);
+      oscillator.connect(gain).connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.16);
+    } catch (error) {
+      // Browsers can block audio until the user interacts with the page.
+    }
+  }
+
+  async function connectChat() {
+    const tokenResponse = await fetch('/api/chat-token');
+    if (!tokenResponse.ok) {
+      window.location.href = 'auth.html?return=contact.html';
+      return;
+    }
+
+    const tokenResult = await tokenResponse.json();
+    const userResponse = await fetch('/api/me');
+    const userResult = await userResponse.json();
+    senderName = userResult.user.name;
+    roomId = `account-${userResult.user.id}`;
+    const chatProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    socket = new WebSocket(`${chatProtocol}://${window.location.hostname}:8080?token=${encodeURIComponent(tokenResult.token)}`);
+
+    socket.onopen = () => {
+      socket.send(JSON.stringify({ type: 'join', roomId }));
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const emptyMessage = chatMessages.querySelector('.chat-empty');
+      if (emptyMessage) emptyMessage.remove();
+      if (data.senderId !== userResult.user.id) playNotificationSound();
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message', data.senderId === userResult.user.id ? 'sent' : 'received');
+      const name = document.createElement('strong');
+      name.className = 'message-sender';
+      name.textContent = data.senderName || 'Ash';
+      const textElement = document.createElement('span');
+      textElement.textContent = data.text;
+      msgDiv.append(name, textElement);
+      chatMessages.appendChild(msgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    };
+  }
+
+  connectChat().catch(() => {
+    window.location.href = 'auth.html?return=contact.html';
+  });
+
+  function sendMessage() {
+    const text = messageInput.value.trim();
+    if (text === '') return;
+
+    // Stuur het bericht naar de server met type 'message'
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify({ type: 'message', text }));
+    messageInput.value = '';
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+</script>
+
+<footer>
+  <div class="text-container">
+    <p>&copy; 2026 Ash's PC Building</p>
+    <p><a href="mailto:ashpcbuilding@gmail.com">Contact us</a></p>
+  </div>
+</footer>

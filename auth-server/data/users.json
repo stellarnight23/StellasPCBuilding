@@ -1,0 +1,10 @@
+[
+  {
+    "id": "fce7ef7d-f57a-49c8-a6ab-84400c900e74",
+    "name": "Ash",
+    "email": "tigoadriaanverra@gmail.com",
+    "salt": "95bcb6a34f917f72e9ed58f15b916a97",
+    "passwordHash": "7549745f703c64f99880f6ffcc899a0595e9f3e4981a653d20bfd60d15e345a9c66b3809820b027a32284bb4e0651d49e274512bf9c8f0129f3d4cefb913e6db",
+    "createdAt": "2026-09-06T13:55:45.085Z"
+  }
+]

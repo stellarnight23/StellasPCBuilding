@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard | Ash's PC Building</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="auth-nav.js" defer></script>
+</head>
+<body>
+    <header>
+        <div class="flex-container">
+            <img src="images/Banner.png" alt="Stella's PC Building Banner" id="banner">
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="auth.html">Account</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="policy.html">Terms of Service</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </nav>
+        <div class="flex-container">
+            <img src="images/Logo.png" alt="Stella's PC Building Logo" id="logo">
+        </div>
+        <h1>Owner Dashboard</h1>
+    </header>
+
+    <main class="dashboard-main">
+        <div class="dashboard-heading">
+            <div>
+                <p class="chat-eyebrow">Ash's PC Building</p>
+                <h2>Customer conversations</h2>
+                <p class="dashboard-description">Choose an open chat to respond to a customer.</p>
+            </div>
+                    <span id="dashboardStatus" class="chat-status dashboard-status"><span></span>Connecting</span>
+        </div>
+
+        <div class="dashboard-layout">
+            <aside class="rooms-panel">
+                <div class="rooms-panel-heading">
+                    <h2>Open chats</h2>
+                    <button id="refreshRooms" class="refresh-button" type="button" aria-label="Refresh open chats">Refresh</button>
+                </div>
+                <div id="roomList" class="room-list" aria-live="polite">
+                    <p class="rooms-empty">Looking for open chats...</p>
+                </div>
+            </aside>
+
+            <section class="chat-panel dashboard-chat-panel">
+                <div class="chat-panel-header">
+                    <div>
+                        <p class="chat-eyebrow">Selected conversation</p>
+                        <h2 id="selectedRoomTitle">No chat selected</h2>
+                    </div>
+                    <span id="participantCount" class="participant-count">0 participants</span>
+                </div>
+                <div id="dashboardMessages" class="dashboard-messages" aria-live="polite">
+                    <p class="chat-empty">Select an open chat to view the conversation.</p>
+                </div>
+                <div class="chat-composer">
+                    <input type="text" id="dashboardMessageInput" placeholder="Write your reply..." aria-label="Your reply" disabled>
+                    <button id="dashboardSendBtn" type="button" disabled>Send</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Ash's PC Building</p>
+    </footer>
+
+    <script>
+        let socket;
+        let ownerId;
+        const ownerName = 'Ash';
+        const roomList = document.getElementById('roomList');
+        const dashboardMessages = document.getElementById('dashboardMessages');
+        const messageInput = document.getElementById('dashboardMessageInput');
+        const sendButton = document.getElementById('dashboardSendBtn');
+        const refreshButton = document.getElementById('refreshRooms');
+        const selectedRoomTitle = document.getElementById('selectedRoomTitle');
+        const participantCount = document.getElementById('participantCount');
+        const dashboardStatus = document.getElementById('dashboardStatus');
+        let activeRoomId = null;
+        let openRooms = [];
+        const soundEnabled = true;
+        let audioContext;
+
+        async function connectDashboard() {
+            ownerId = 'owner';
+            const chatProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            socket = new WebSocket(`${chatProtocol}://${window.location.hostname}:8080?dashboard=1`);
+            socket.onopen = () => {
+                dashboardStatus.innerHTML = '<span></span>Connected';
+                sendJson({ type: 'dashboard' });
+            };
+            socket.onmessage = handleSocketMessage;
+            socket.onclose = () => {
+                dashboardStatus.innerHTML = '<span></span>Offline';
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+            };
+            socket.onerror = () => {
+                dashboardStatus.innerHTML = '<span></span>Connection error';
+            };
+        }
+
+        function playNotificationSound() {
+            if (!soundEnabled) return;
+            try {
+                audioContext ||= new AudioContext();
+                const oscillator = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                oscillator.frequency.value = 660;
+                oscillator.type = 'sine';
+                gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.16);
+                oscillator.connect(gain).connect(audioContext.destination);
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.16);
+            } catch (error) {
+                // Browsers can block audio until the user interacts with the page.
+            }
+        }
+
+        function sendJson(data) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(data));
+                return true;
+            }
+            dashboardStatus.innerHTML = '<span></span>Offline';
+            return false;
+        }
+
+        function showEmptyMessage(text) {
+            dashboardMessages.innerHTML = '';
+            const emptyMessage = document.createElement('p');
+            emptyMessage.className = 'chat-empty';
+            emptyMessage.textContent = text;
+            dashboardMessages.appendChild(emptyMessage);
+        }
+
+        function addMessage(data) {
+            const emptyMessage = dashboardMessages.querySelector('.chat-empty');
+            if (emptyMessage) emptyMessage.remove();
+
+            const message = document.createElement('div');
+            message.className = data.senderId === ownerId ? 'message sent' : 'message received';
+            const name = document.createElement('strong');
+            name.className = 'message-sender';
+            name.textContent = data.senderName || (data.senderId === ownerId ? ownerName : 'Customer');
+            const text = document.createElement('span');
+            text.textContent = data.text;
+            message.append(name, text);
+            dashboardMessages.appendChild(message);
+            dashboardMessages.scrollTop = dashboardMessages.scrollHeight;
+            if (data.senderId !== ownerId) playNotificationSound();
+        }
+
+        function renderRooms() {
+            roomList.innerHTML = '';
+
+            if (openRooms.length === 0) {
+                const emptyMessage = document.createElement('p');
+                emptyMessage.className = 'rooms-empty';
+                emptyMessage.textContent = 'No open chats right now.';
+                roomList.appendChild(emptyMessage);
+                return;
+            }
+
+            openRooms.forEach((room) => {
+                const roomCard = document.createElement('div');
+                roomCard.className = 'room-card' + (room.roomId === activeRoomId ? ' selected' : '');
+
+                const roomInfo = document.createElement('div');
+                roomInfo.className = 'room-info';
+                const roomName = document.createElement('strong');
+                roomName.textContent = room.customerName || room.roomId;
+                const roomMeta = document.createElement('span');
+                roomMeta.textContent = `${room.participants} participant${room.participants === 1 ? '' : 's'}`;
+                roomInfo.append(roomName, roomMeta);
+
+                const enterButton = document.createElement('button');
+                enterButton.className = 'enter-room-button';
+                enterButton.type = 'button';
+                enterButton.textContent = room.roomId === activeRoomId ? 'Open' : 'Enter';
+                enterButton.addEventListener('click', () => selectRoom(room));
+
+                roomCard.append(roomInfo, enterButton);
+                roomList.appendChild(roomCard);
+            });
+        }
+
+        function selectRoom(room) {
+            activeRoomId = room.roomId;
+            selectedRoomTitle.textContent = room.roomId;
+            participantCount.textContent = `${room.participants} participant${room.participants === 1 ? '' : 's'}`;
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            showEmptyMessage('Loading conversation...');
+            sendJson({ type: 'join', roomId: room.roomId, senderId: ownerId });
+            renderRooms();
+        }
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !activeRoomId) return;
+            if (sendJson({ type: 'message', text })) messageInput.value = '';
+        }
+
+        function handleSocketMessage(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'rooms') {
+                openRooms = data.rooms;
+                renderRooms();
+                const activeRoom = openRooms.find((room) => room.roomId === activeRoomId);
+                if (activeRoom) {
+                    participantCount.textContent = `${activeRoom.participants} participant${activeRoom.participants === 1 ? '' : 's'}`;
+                }
+                return;
+            }
+            if (data.type === 'message') addMessage(data);
+        }
+
+        refreshButton.addEventListener('click', () => sendJson({ type: 'listRooms' }));
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') sendMessage();
+        });
+        connectDashboard().catch(() => {
+            dashboardStatus.innerHTML = '<span></span>Offline';
+        });
+    </script>
+</body>
+</html>

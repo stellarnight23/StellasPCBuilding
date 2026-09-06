@@ -1,0 +1,53 @@
+{
+  "account-fce7ef7d-f57a-49c8-a6ab-84400c900e74": [
+    {
+      "type": "message",
+      "senderId": "fce7ef7d-f57a-49c8-a6ab-84400c900e74",
+      "senderName": "Ash",
+      "text": "HI",
+      "timestamp": 1788704004578
+    },
+    {
+      "type": "message",
+      "senderId": "owner",
+      "senderName": "Ash",
+      "text": "Hi there",
+      "timestamp": 1788704172181
+    },
+    {
+      "type": "message",
+      "senderId": "owner",
+      "senderName": "Ash",
+      "text": "Hru",
+      "timestamp": 1788704179713
+    },
+    {
+      "type": "message",
+      "senderId": "fce7ef7d-f57a-49c8-a6ab-84400c900e74",
+      "senderName": "Ash",
+      "text": "im alr",
+      "timestamp": 1788704384301
+    },
+    {
+      "type": "message",
+      "senderId": "owner",
+      "senderName": "Ash",
+      "text": "good",
+      "timestamp": 1788704392696
+    },
+    {
+      "type": "message",
+      "senderId": "owner",
+      "senderName": "Ash",
+      "text": "hi there",
+      "timestamp": 1788704522280
+    },
+    {
+      "type": "message",
+      "senderId": "owner",
+      "senderName": "Ash",
+      "text": "Browser test reply",
+      "timestamp": 1788704594501
+    }
+  ]
+}
