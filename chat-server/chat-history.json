@@ -48,6 +48,13 @@
       "senderName": "Ash",
       "text": "Browser test reply",
       "timestamp": 1788704594501
+    },
+    {
+      "type": "message",
+      "senderId": "owner",
+      "senderName": "Ash",
+      "text": "hi",
+      "timestamp": 1788709230049
     }
   ]
 }

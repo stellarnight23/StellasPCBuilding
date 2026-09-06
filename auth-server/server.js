@@ -2,18 +2,29 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const nodemailer = require('nodemailer');
 const { promisify } = require('node:util');
 
 const rootDirectory = path.resolve(__dirname, '..');
 const dataDirectory = path.join(__dirname, 'data');
 const usersFile = path.join(dataDirectory, 'users.json');
+const resetTokensFile = path.join(dataDirectory, 'reset-tokens.json');
 const port = Number(process.env.PORT) || 3000;
 const sessions = new Map();
 const scrypt = promisify(crypto.scrypt);
 const chatSecret = process.env.CHAT_SECRET || 'development-chat-secret-change-me';
+const resetTokenLifetimeMs = 30 * 60 * 1000;
+const publicUrl = process.env.PUBLIC_URL || `http://localhost:${port}`;
+const mailer = process.env.SMTP_HOST ? nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD }
+}) : null;
 
 fs.mkdirSync(dataDirectory, { recursive: true });
 if (!fs.existsSync(usersFile)) fs.writeFileSync(usersFile, '[]');
+if (!fs.existsSync(resetTokensFile)) fs.writeFileSync(resetTokensFile, '{}');
 
 function readUsers() {
   return JSON.parse(fs.readFileSync(usersFile, 'utf8'));
@@ -21,6 +32,30 @@ function readUsers() {
 
 function writeUsers(users) {
   fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+}
+
+function readResetTokens() {
+  return JSON.parse(fs.readFileSync(resetTokensFile, 'utf8'));
+}
+
+function writeResetTokens(tokens) {
+  fs.writeFileSync(resetTokensFile, JSON.stringify(tokens, null, 2));
+}
+
+function hashResetToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+async function sendResetEmail(user, token) {
+  if (!mailer) throw new Error('SMTP is not configured');
+  const resetUrl = `${publicUrl}/reset-password.html?token=${encodeURIComponent(token)}`;
+  await mailer.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: user.email,
+    subject: "Reset your Ash's PC Building password",
+    text: `Use this link to reset your password. It expires in 30 minutes:\n\n${resetUrl}`,
+    html: `<p>Use this link to reset your password. It expires in 30 minutes:</p><p><a href="${resetUrl}">Reset your password</a></p>`
+  });
 }
 
 function parseCookies(request) {
@@ -106,6 +141,44 @@ async function handleApi(request, response) {
       const user = getSessionUser(request);
       if (!user) return sendJson(response, 401, { error: 'You must be logged in to use chat.' });
       return sendJson(response, 200, { token: createChatToken(user) });
+    }
+
+    if (request.method === 'POST' && request.url === '/api/forgot-password') {
+      const body = await readBody(request);
+      const email = String(body.email || '').trim().toLowerCase();
+      const user = readUsers().find((candidate) => candidate.email === email);
+      const genericMessage = 'If an account exists for that email, a password reset link has been sent.';
+      if (!user) return sendJson(response, 200, { message: genericMessage });
+      if (!mailer) return sendJson(response, 503, { error: 'Password reset email is not configured on the server yet.' });
+
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const tokens = readResetTokens();
+      tokens[hashResetToken(rawToken)] = { userId: user.id, expiresAt: Date.now() + resetTokenLifetimeMs };
+      writeResetTokens(tokens);
+      await sendResetEmail(user, rawToken);
+      return sendJson(response, 200, { message: genericMessage });
+    }
+
+    if (request.method === 'POST' && request.url === '/api/reset-password') {
+      const body = await readBody(request);
+      const tokenHash = hashResetToken(String(body.token || ''));
+      const tokens = readResetTokens();
+      const reset = tokens[tokenHash];
+      const password = String(body.password || '');
+      if (!reset || reset.expiresAt < Date.now() || password.length < 8) {
+        return sendJson(response, 400, { error: 'This reset link is invalid or expired.' });
+      }
+
+      const users = readUsers();
+      const user = users.find((candidate) => candidate.id === reset.userId);
+      if (!user) return sendJson(response, 400, { error: 'This reset link is invalid or expired.' });
+      const { salt, hash } = await hashPassword(password);
+      user.salt = salt;
+      user.passwordHash = hash;
+      writeUsers(users);
+      delete tokens[tokenHash];
+      writeResetTokens(tokens);
+      return sendJson(response, 200, { ok: true });
     }
 
     if (request.method === 'POST' && ['/api/register', '/api/login'].includes(request.url)) {
